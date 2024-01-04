@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "app"
+description = ""
+version = "0.1.0"
+authors = ["Olga Kozlova <2105894+eventlistener@users.noreply.github.com>"]
+packages = [{include = "app", from = "src"}]
+
+[tool.poetry.dependencies]
+python = "~3.11"
+aiohttp = "~3.9"
+
+[tool.poetry.group.test.dependencies]
+flake518 = "~1.6"
+flake8 = "~6.1"
+pytest = "~7.4"
+pytest-random-order = "~1.1"
+
+[tool.flake8]
+extend-exclude = [".venv"]
+max-line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["src/tests"]
+addopts = "--random-order"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
