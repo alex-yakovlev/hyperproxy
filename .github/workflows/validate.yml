@@ -1,0 +1,67 @@
+name: Run linting and tests
+
+on:
+  pull_request:
+    branches:
+      - main
+
+  push:
+    branches:
+      - main
+
+env:
+  APP_IMAGE_NAME: app:ci-${{ github.sha }}
+  APP_IMAGE_TARBALL_PATH: /tmp/app-image-${{ github.sha }}.tar
+  APP_IMAGE_CACHE_KEY: app-image-${{ github.sha }}
+
+jobs:
+  prepare-image:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v4
+
+    - name: Build app image
+      run: docker build --tag $APP_IMAGE_NAME .
+
+    - name: Save image
+      run: docker save $APP_IMAGE_NAME > $APP_IMAGE_TARBALL_PATH
+
+    # Кэширует образ для использования в следущих джобах;
+    # TODO кэшировать слои, которые могут переиспользоваться между запусками
+    - name: Cache image
+      uses: actions/cache/save@v3
+      with:
+        path: ${{ env.APP_IMAGE_TARBALL_PATH }}
+        key: ${{ env.APP_IMAGE_CACHE_KEY }}
+
+  lint:
+    runs-on: ubuntu-latest
+
+    needs: prepare-image
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Load app image
+        uses: ./.github/actions/load-cached-image
+
+      - name: Lint
+        run: docker run $APP_IMAGE_NAME poetry run flake518
+
+  test:
+    runs-on: ubuntu-latest
+
+    needs: prepare-image
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Load app image
+        uses: ./.github/actions/load-cached-image
+
+      - name: Run unit tests
+        run: docker run $APP_IMAGE_NAME poetry run pytest

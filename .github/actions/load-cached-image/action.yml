@@ -1,0 +1,16 @@
+# Восстанавливает из кэша образ, сохраненный в `prepare-image`
+name: Load cached app image
+
+runs:
+  using: composite
+
+  steps:
+    - name: Restore cached image
+      uses: actions/cache/restore@v3
+      with:
+        path: ${{ env.APP_IMAGE_TARBALL_PATH }}
+        key: ${{ env.APP_IMAGE_CACHE_KEY }}
+
+    - name: Load image
+      run: docker load < $APP_IMAGE_TARBALL_PATH
+      shell: bash
