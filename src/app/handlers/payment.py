@@ -1,4 +1,4 @@
-import aiohttp
+import aiohttp.web
 
 
 response = '''

@@ -3,6 +3,7 @@ import contextvars
 import aiohttp.web
 import aiohttp.web_exceptions
 
+from app import constants
 from app import handlers
 from app import router
 from app.utils import config
@@ -14,7 +15,7 @@ QUERY_HANDLER = contextvars.ContextVar('query_handler')
 def make_app():
     app = aiohttp.web.Application()
 
-    query_router = router.QueryRouter(query_param='function')
+    query_router = router.QueryRouter(query_param=constants.ROUTING_QUERY_PARAM)
     ''' /?function=check '''
     query_router.add_view('check', handlers.CheckHandler)
     ''' /?function=payment '''
