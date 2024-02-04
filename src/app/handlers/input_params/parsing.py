@@ -60,16 +60,18 @@ def parse_params(query_dict):
         (где `request` — инстанс `aiohttp.web.Request`)
 
     Returns:
-        (multidict.MultiDict, multidict.MultiDict): именованные и составные параметры по отдельности
+        multidict.MultiDict: именованные и составные параметры в одном словаре
     '''
 
     # к именованным относятся все параметры, кроме `function` и `params`/`Params`
-    named_params = query_dict.copy()
-    named_params.pop(constants.ROUTING_QUERY_PARAM, None)
+    params = query_dict.copy()
+    params.pop(constants.ROUTING_QUERY_PARAM, None)
 
     coded_params = _parse_coded_params([
-        *named_params.popall('Params', []),
-        *named_params.popall('params', [])
+        *params.popall('Params', []),
+        *params.popall('params', [])
     ])
 
-    return named_params, coded_params
+    params.extend(coded_params)
+
+    return params
