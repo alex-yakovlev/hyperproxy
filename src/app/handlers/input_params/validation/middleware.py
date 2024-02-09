@@ -1,17 +1,18 @@
 import functools
 
-import aiohttp.web
-
 from .validator import Validator
+from app.handlers.templating.renderer import render_response
 
 
-ERROR_RESPONSE = '''
-<Response>
-    <Result>NOT OK</Result>
-    <ErrCode>1</ErrCode>
-    <Description></Description>
-</Response>
-'''
+class ErrorTemplate():
+    async def render(self, **context):
+        return '''
+        <Response>
+            <Result>NOT OK</Result>
+            <ErrCode>1</ErrCode>
+            <Description></Description>
+        </Response>
+        '''
 
 
 def with_validated_params(schema):
@@ -50,10 +51,9 @@ def with_validated_params(schema):
             params = self.request.pop('method_params_raw', {})
             params_normalized = validator.validated(params)
             if len(validator.errors) > 0:
-                return aiohttp.web.Response(text=ERROR_RESPONSE, content_type='text/xml')
+                return await render_response(ErrorTemplate(), {})
 
             self.request['method_params'] = params_normalized
-
             return await handler(self)
 
         return wrapped

@@ -1,27 +1,21 @@
-import functools
-
 import aiohttp.web
 
 
-def with_template_response(template):
+async def render_response(template, context, content_type='text/xml', **response_kwargs):
     '''
+    Возвращает ответ для обработчика запроса, отрендеренный из шаблона
 
     Args:
+        template (object): объект с асинхронным методом `render`, возвращающим строку
+        context (dict): данные для шаблона
+
+    Keyword Args:
+        см. аргументы конструктора `aiohttp.web.Response`, кроме `text` и `body`
+        https://docs.aiohttp.org/en/stable/web_reference.html#aiohttp.web.Response
+
+    Returns:
+        aiohttp.web.Response
     '''
 
-    def wrapper(handler):
-        '''
-
-        Args:
-            handler(function): декорируемый обработчик, метод class-based view
-        '''
-
-        @functools.wraps(handler)
-        async def wrapped(self):
-            context = await handler(self)
-            response = template.render(context)
-            return aiohttp.web.Response(text=response, content_type='text/xml')
-
-        return wrapped
-
-    return wrapper
+    response_text = await template.render(**(context or {}))
+    return aiohttp.web.Response(text=response_text, content_type=content_type, **response_kwargs)
