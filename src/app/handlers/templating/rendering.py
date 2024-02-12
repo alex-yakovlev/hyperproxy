@@ -1,4 +1,20 @@
 import aiohttp.web
+import genshi.template
+
+
+class Template():
+    def __init__(self, template_str):
+        '''
+        Обертка над шаблонами Genshi
+
+        Args:
+            template_str (str): содержимое шаблона
+        '''
+
+        self.template = genshi.template.MarkupTemplate(template_str)
+
+    async def render(self, **context):
+        return self.template.generate(**context).render()
 
 
 async def render_response(template, context, content_type='text/xml', **response_kwargs):

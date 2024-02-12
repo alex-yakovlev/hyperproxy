@@ -1,0 +1,7 @@
+<!--! см. https://genshi.edgewall.org/wiki/Documentation/xml-templates.html -->
+
+<Response>
+  <Result>${'OK' if success else 'NOT OK'}</Result>
+  <ErrCode>${0 if success else error_code}</ErrCode>
+  <Description></Description>
+</Response>

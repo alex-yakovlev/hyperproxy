@@ -1,18 +1,7 @@
 import functools
 
+from app.handlers.templating import render_response
 from .validator import Validator
-from app.handlers.templating.renderer import render_response
-
-
-class ErrorTemplate():
-    async def render(self, **context):
-        return '''
-        <Response>
-            <Result>NOT OK</Result>
-            <ErrCode>1</ErrCode>
-            <Description></Description>
-        </Response>
-        '''
 
 
 def with_validated_params(schema):
@@ -51,7 +40,10 @@ def with_validated_params(schema):
             params = self.request.pop('method_params_raw', {})
             params_normalized = validator.validated(params)
             if len(validator.errors) > 0:
-                return await render_response(ErrorTemplate(), {})
+                return await render_response(
+                    self.request.app['templates']['response'],
+                    {'success': False, 'error_code': 1}
+                )
 
             self.request['method_params'] = params_normalized
             return await handler(self)
