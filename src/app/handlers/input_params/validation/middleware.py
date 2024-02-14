@@ -2,6 +2,7 @@ import functools
 
 from app.handlers.templating import render_response
 from .validator import Validator
+from .error_handling import InputParamsErrorHandler
 
 
 def with_validated_params(schema):
@@ -18,7 +19,7 @@ def with_validated_params(schema):
         function: декоратор
     '''
 
-    validator = Validator(schema)
+    validator = Validator(schema, error_handler=InputParamsErrorHandler)
 
     def wrapper(handler):
         '''
@@ -39,13 +40,14 @@ def with_validated_params(schema):
 
             params = self.request.pop('method_params_raw', {})
             params_normalized = validator.validated(params)
-            if len(validator.errors) > 0:
+            if not validator.is_document_valid:
                 return await render_response(
                     self.request.app['templates']['response'],
-                    {'success': False, 'error_code': 1}
+                    {'success': False, 'error_code': 1, 'validation_errors': validator.errors}
                 )
 
             self.request['method_params'] = params_normalized
+
             return await handler(self)
 
         return wrapped

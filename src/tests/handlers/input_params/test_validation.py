@@ -1,8 +1,8 @@
 import multidict
 import cerberus.errors
 
-from app.handlers.input_params.validation.validator import Validator, _multi_to_single
-from app.handlers.input_params.validation.errors import errors
+from app.handlers.input_params.validation.validator import Validator
+from app.handlers.input_params.validation.custom_rules import MultiValueErrors
 
 
 class TestValidator:
@@ -48,8 +48,6 @@ class TestValidator:
         assert data_normalized is None
         assert len(validator.errors) == 1
         assert cerberus.errors.COERCION_FAILED in validator.document_error_tree['foo']
-        error = validator.document_error_tree['foo'][cerberus.errors.COERCION_FAILED]
-        assert error.constraint != _multi_to_single
 
     def test_multiple_values(self):
         schema = {
@@ -70,8 +68,7 @@ class TestValidator:
         assert len(validator.errors) == 1
         assert cerberus.errors.COERCION_FAILED in validator.document_error_tree['foo']
         error = validator.document_error_tree['foo'][cerberus.errors.COERCION_FAILED]
-        assert error.constraint is _multi_to_single
-        assert error.info == (errors.SEQUENCE_OF_MANY,)
+        assert error.info == (MultiValueErrors.SEQUENCE_OF_MANY,)
 
     def test_regular_dict(self):
         schema = {
@@ -91,10 +88,8 @@ class TestValidator:
 
         assert cerberus.errors.COERCION_FAILED in validator.document_error_tree['foo']
         error_foo = validator.document_error_tree['foo'][cerberus.errors.COERCION_FAILED]
-        assert error_foo.constraint is _multi_to_single
-        assert error_foo.info == (errors.NOT_A_SEQUENCE,)
+        assert error_foo.info == (MultiValueErrors.NOT_A_SEQUENCE,)
 
         assert cerberus.errors.COERCION_FAILED in validator.document_error_tree['bar']
         error_bar = validator.document_error_tree['bar'][cerberus.errors.COERCION_FAILED]
-        assert error_bar.constraint is _multi_to_single
-        assert error_bar.info == (errors.NOT_A_SEQUENCE,)
+        assert error_bar.info == (MultiValueErrors.NOT_A_SEQUENCE,)

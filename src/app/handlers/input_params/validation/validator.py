@@ -1,38 +1,7 @@
 import cerberus
 
-from app.utils.type_conversions import is_nonstring_sequence
 from .utils import merge_schemas, extend_coercers
-from .errors import errors
-
-
-def _multi_to_single(obj, fail_if_multiple=True):
-    '''
-    Возвращает первое значение из списка
-
-    Args:
-        obj (list|*): список, из которого нужно первое значение
-        fail_if_multiple (bool): кидать ли ошибку, если в списке больше одного элемента
-
-    Raises:
-        TypeError: если `obj` не список (точнее, не реализует интерфейс `Sequence`)
-        ValueError: если список пуст
-        ValueError: если в списке больше одного элемента и передан соответствующий флаг
-
-    Returns:
-        *: первый элемент списка
-    '''
-
-    # не должно происходить при нормальном использовании
-    if not is_nonstring_sequence(obj):
-        raise TypeError(errors.NOT_A_SEQUENCE)
-
-    if len(obj) == 0:
-        raise ValueError(errors.EMPTY_SEQUENCE)
-
-    if fail_if_multiple and len(obj) > 1:
-        raise ValueError(errors.SEQUENCE_OF_MANY)
-
-    return obj[0]
+from .custom_rules import multi_to_single
 
 
 class Validator(cerberus.Validator):
@@ -57,7 +26,7 @@ class Validator(cerberus.Validator):
         if schema is None:
             return None
 
-        normalizer_schema = {field: {'coerce': _multi_to_single} for field in schema}
+        normalizer_schema = {field: {'coerce': multi_to_single} for field in schema}
         return merge_schemas(normalizer_schema, schema, extend_coercers)
 
     @staticmethod
@@ -93,3 +62,7 @@ class Validator(cerberus.Validator):
             schema=self._prepare_schema(schema),
             **kwargs
         )
+
+    @property
+    def is_document_valid(self):
+        return len(self.errors) == 0
