@@ -17,6 +17,7 @@ flake518 = "~1.6"
 flake8 = "~6.1"
 pytest = "~7.4"
 pytest-random-order = "~1.1"
+pytest-asyncio = "~0.23.4"
 
 [tool.flake8]
 extend-exclude = [".venv"]

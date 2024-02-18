@@ -55,7 +55,7 @@ COMMON_PARAMS_SCHEMA = {
             # IBAN
             {'regex': r'^[A-Z]{2}\d{2}[\dA-Z]{1,30}$'},
             # номер карты
-            {'regex': r'^\d{16}$'},
+            {'regex': r'^\d{8,19}$'},
         ],
     },
     '801': {
