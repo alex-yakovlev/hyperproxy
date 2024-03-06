@@ -10,103 +10,29 @@ class TestParseParams:
     @pytest.mark.parametrize('query_string, parsed_params_expected', [
         # пример из ТЗ
         (
-            'function=check&Amount=300000&PaymExtId=7b9bb88e5b&PaymSubjTp=6301&TermType=003-10&TermId=7621&Params= 1 TR790006701000000051001858;904 79601231212;903 1234123456;920 ИВАНОВ;921 ИВАН;922 ИВАНОВИЧ;907 1969-04-11;804 79601231212;801 Alexandra Mankovskaya;807 1983-10-30',  # noqa: E501
+            'ACTION=payment&ACCOUNT=TR000000000000000000001234&SERVICECODE=123&PAY_ID=2001967202&PAY_DATE=22.05.2023_13:49:41&CURR_RATE=0.2101&AMOUNT=3000.00&CURRENCY=RUB&SETTLEMENT_CURR=RUB&SENDER_FIO=IVANOV IVAN IVANOVICH&SENDER_BIRTHDAY=31.12.1970&ID_SERIES_NUMBER=1234123456&SENDER_PHONE=79001231234&SENDER_ADDRESS=MOSKVA&RECEIVER_PHONE=79003214321&RECEIVER_FIO=PETROV PETR PETROVICH&RECEIVER_BIRTHDAY=16.03.1989&OPER_ID=X236RRTG',  # noqa: E501
             multidict.MultiDict([
-                ('Amount', '300000'),
-                ('PaymExtId', '7b9bb88e5b'),
-                ('PaymSubjTp', '6301'),
-                ('TermType', '003-10'),
-                ('TermId', '7621'),
-                ('1', 'TR790006701000000051001858'),
-                ('904', '79601231212'),
-                ('903', '1234123456'),
-                ('920', 'ИВАНОВ'),
-                ('921', 'ИВАН'),
-                ('922', 'ИВАНОВИЧ'),
-                ('907', '1969-04-11'),
-                ('804', '79601231212'),
-                ('801', 'Alexandra Mankovskaya'),
-                ('807', '1983-10-30'),
-            ])
-        ),
-
-        # еще пример из ТЗ
-        (
-            'function=payment&id=9d06b30c-8fc2-11ee-b9d1-0242ac120002&Amount=300000&PaymExtId=7b9bb88e5b&PaymSubjTp=6301&TermType=003-10&TermId=7621&Params= 1 TR790006701000000051001858;904 79601231212;903 1234123456;920 ИВАНОВ;921 ИВАН;922 ИВАНОВИЧ;907 1969-04-11;804 79601231212;801 Alexandra Mankovskaya;807 1983-10-30',  # noqa: E501
-            multidict.MultiDict([
-                ('id', '9d06b30c-8fc2-11ee-b9d1-0242ac120002'),
-                ('Amount', '300000'),
-                ('PaymExtId', '7b9bb88e5b'),
-                ('PaymSubjTp', '6301'),
-                ('TermType', '003-10'),
-                ('TermId', '7621'),
-                ('1', 'TR790006701000000051001858'),
-                ('904', '79601231212'),
-                ('903', '1234123456'),
-                ('920', 'ИВАНОВ'),
-                ('921', 'ИВАН'),
-                ('922', 'ИВАНОВИЧ'),
-                ('907', '1969-04-11'),
-                ('804', '79601231212'),
-                ('801', 'Alexandra Mankovskaya'),
-                ('807', '1983-10-30'),
-            ])
-        ),
-
-        # ключ `params` может быть с маленькой буквы
-        (
-            'function=foo&Amount=45000&PaymExtId=7b9bb88e5b&PaymSubjTp=6301&TermType=003-10&TermId=7621&params= 1 TR790006701000000051001858;904 79601231212;903 1234123456;920 ИВАНОВ;921 ИВАН;922 ИВАНОВИЧ;907 1969-04-11;804 79601231212;801 Alexandra Mankovskaya;807 1983-10-30',  # noqa: E501
-            multidict.MultiDict([
-                ('Amount', '45000'),
-                ('PaymExtId', '7b9bb88e5b'),
-                ('PaymSubjTp', '6301'),
-                ('TermType', '003-10'),
-                ('TermId', '7621'),
-                ('1', 'TR790006701000000051001858'),
-                ('904', '79601231212'),
-                ('903', '1234123456'),
-                ('920', 'ИВАНОВ'),
-                ('921', 'ИВАН'),
-                ('922', 'ИВАНОВИЧ'),
-                ('907', '1969-04-11'),
-                ('804', '79601231212'),
-                ('801', 'Alexandra Mankovskaya'),
-                ('807', '1983-10-30'),
+                ('ACCOUNT', 'TR000000000000000000001234'),
+                ('SERVICECODE', '123'),
+                ('PAY_ID', '2001967202'),
+                ('PAY_DATE', '22.05.2023_13:49:41'),
+                ('CURR_RATE', '0.2101'),
+                ('AMOUNT', '3000.00'),
+                ('CURRENCY', 'RUB'),
+                ('SETTLEMENT_CURR', 'RUB'),
+                ('SENDER_FIO', 'IVANOV IVAN IVANOVICH'),
+                ('SENDER_BIRTHDAY', '31.12.1970'),
+                ('ID_SERIES_NUMBER', '1234123456'),
+                ('SENDER_PHONE', '79001231234'),
+                ('SENDER_ADDRESS', 'MOSKVA'),
+                ('RECEIVER_PHONE', '79003214321'),
+                ('RECEIVER_FIO', 'PETROV PETR PETROVICH'),
+                ('RECEIVER_BIRTHDAY', '16.03.1989'),
+                ('OPER_ID', 'X236RRTG'),
             ])
         ),
 
         # семантика параметров не учитывается
-        (
-            'params=9999 foo;bar baz&foo=bar&baz=quux',
-            multidict.MultiDict([
-                ('foo', 'bar'),
-                ('baz', 'quux'),
-                ('9999', 'foo'),
-                ('bar', 'baz'),
-            ])
-        ),
-
-        # лишние разделители в составных параметрах
-        (
-            'foo=bar&baz=quux&params=; 9999 foo;;bar baz  ;',
-            multidict.MultiDict([
-                ('foo', 'bar'),
-                ('baz', 'quux'),
-                ('9999', 'foo'),
-                ('bar', 'baz'),
-            ])
-        ),
-
-        # не переданы именованные параметры
-        (
-            'params=9999 foo;bar baz',
-            multidict.MultiDict([
-                ('9999', 'foo'),
-                ('bar', 'baz'),
-            ])
-        ),
-
-        # не переданы составные параметры (нет ключа `params`)
         (
             'foo=bar&baz=quux',
             multidict.MultiDict([
@@ -115,22 +41,11 @@ class TestParseParams:
             ])
         ),
 
-        # не переданы составные параметры (ключ `params` с пустым значением)
-        (
-            'foo=bar&baz=quux&params= ',
-            multidict.MultiDict([
-                ('foo', 'bar'),
-                ('baz', 'quux'),
-            ])
-        ),
-
         # параметры с пустым значением
         (
-            'params=9999;bar ;&foo=&baz',
+            'foo=&bar',
             multidict.MultiDict([
                 ('foo', ''),
-                ('baz', ''),
-                ('9999', ''),
                 ('bar', ''),
             ])
         ),

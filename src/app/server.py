@@ -33,9 +33,11 @@ def make_app():
     app = aiohttp.web.Application()
 
     query_router = router.QueryRouter(query_param=constants.ROUTING_QUERY_PARAM)
-    ''' /?function=check '''
-    query_router.add_view('check', handlers.CheckHandler)
-    ''' /?function=payment '''
+    ''' /?ACTION=nmtcheck '''
+    query_router.add_view('nmtcheck', handlers.NMT_CheckHandler)
+    ''' /?ACTION=clientcheck '''
+    query_router.add_view('clientcheck', handlers.ClientCheckHandler)
+    ''' /?ACTION=payment '''
     query_router.add_view('payment', handlers.PaymentHandler)
 
     class RootHandler(aiohttp.web.View):

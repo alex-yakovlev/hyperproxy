@@ -318,6 +318,21 @@ files = [
 ]
 
 [[package]]
+name = "iso-4217"
+version = "0.6.240101"
+description = "ISO 4217 currency code library"
+optional = false
+python-versions = "<4,>=3.7"
+files = [
+    {file = "iso_4217-0.6.240101-py3-none-any.whl", hash = "sha256:a780ab0d6a696573ba0b9024ca1a121a83f11deb8e8fadb0a3637fd9442735b7"},
+    {file = "iso_4217-0.6.240101.tar.gz", hash = "sha256:924a37a38b625f319e3bfa9388bd7c350a3add04d05403f5dcc4f7fbfed96d2a"},
+]
+
+[package.extras]
+pint = ["Pint (>=0.16)"]
+test = ["pytest"]
+
+[[package]]
 name = "mccabe"
 version = "0.7.0"
 description = "McCabe checker, plugin for flake8"
@@ -628,4 +643,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = "~3.11"
-content-hash = "43ab00b59e9a3b6ff513a635953a8a46f17c4b8791c11b4336d774c6c3e1d424"
+content-hash = "e9dfd086090ee60d3ab815f02ec8c8dd9b3d3feff85e8430c0e82376f41a667f"
