@@ -27,7 +27,7 @@ class QueryRouter(CustomRouter):
     Поддерживает только class-based views в качестве обработчиков.
 
     Args:
-        query_param(str): название URL-параметра, по которому будут проверяться запросы
+        query_param (str): название URL-параметра, по которому будут проверяться запросы
     '''
 
     def __init__(self, query_param):
@@ -40,8 +40,8 @@ class QueryRouter(CustomRouter):
         Регистрирует обработчик запроса (аналогично `aiohttp.web.UrlDispatcher.add_view`)
 
         Args:
-            query(str): значение параметра `query_param` (см. конструктор)
-            handler(aiohttp.abc.AbstractView): обработчик
+            query (str): значение параметра `query_param` (см. конструктор)
+            handler (aiohttp.abc.AbstractView): обработчик
         '''
 
         self._routes[query] = handler
@@ -51,36 +51,38 @@ class QueryRouter(CustomRouter):
         return self._routes.get(route)
 
 
-def custom_router(sub_router, sub_handler_var):
+def custom_routing(sub_handler_var, *sub_routers):
     '''
     Декоратор для использования вложенного роутера в class-based views.
 
     Args:
-        sub_router(CustomRouter): роутер, которым должны проверяться запросы
-        в дополнение к стандартному; его обработчики могут быть функциями или class-based view
-
-        sub_handler_var(contextvars.ContextVar): context variable, с помощью которой
+        sub_handler_var (contextvars.ContextVar): context variable, с помощью которой
         внешнему обработчику передается дополнительный
+
+        *sub_routers (CustomRouter): роутеры, которыми должны проверяться запросы
+        в дополнение к стандартному (их обработчики могут быть функциями или class-based view);
+        роутеры перебираются по порядку, пока не будет заматчен запрос
     '''
 
     def decorator(handler):
         '''
-        Если в `sub_router` найден матч запроса, сохраняет обработчик в `sub_handler_var`,
-        откуда внешний обработчик может его взять, чтобы делегировать запрос;
+        Если в каком-либо из `sub_routers` найден матч запроса, сохраняет обработчик
+        в `sub_handler_var`, откуда внешний обработчик может его взять, чтобы делегировать запрос;
         иначе кидает 406 Not Acceptable
 
         Args:
-            handler(function): декорируемый обработчик, метод class-based view
+            handler (function): декорируемый обработчик, метод class-based view
         '''
 
         @functools.wraps(handler)
         async def wrapper(self):
-            sub_handler = await sub_router.resolve(self.request)
-            if not sub_handler:
-                raise aiohttp.web_exceptions.HTTPNotAcceptable()
+            for sub_router in sub_routers:
+                sub_handler = await sub_router.resolve(self.request)
+                if sub_handler:
+                    sub_handler_var.set(sub_handler)
+                    return await handler(self)
 
-            sub_handler_var.set(sub_handler)
-            return await handler(self)
+            raise aiohttp.web_exceptions.HTTPNotAcceptable()
 
         return wrapper
 

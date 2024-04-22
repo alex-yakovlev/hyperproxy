@@ -1,11 +1,10 @@
 import functools
 
-from app.handlers.templating import render_response
 from .validator import Validator
 from .error_handling import InputParamsErrorHandler
 
 
-def with_validated_params(schema):
+def with_validated_params(error_renderer, schema):
     '''
     Декоратор, валидирущий входные параметры. В случае успешной валидации сохраняет
     нормализованные параметры в объекте `request` и передает управление исходному обработчику,
@@ -13,6 +12,7 @@ def with_validated_params(schema):
     Зависит от декоратора `with_parsed_params`.
 
     Args:
+        error_renderer (function): функция, которая возвращает ответ в случае ошибки валидации
         schema (dict): схема в формате Cerberus
 
     Returns:
@@ -41,10 +41,7 @@ def with_validated_params(schema):
             params = self.request.pop('method_params_raw', {})
             params_normalized = validator.validated(params)
             if not validator.is_document_valid:
-                return await render_response(
-                    self.request.app['templates']['response'],
-                    {'success': False, 'error_code': 1, 'validation_errors': validator.errors}
-                )
+                return await error_renderer(self.request.app['templates'], validator.errors)
 
             self.request['method_params'] = params_normalized
 

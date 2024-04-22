@@ -1,7 +1,7 @@
 from datetime import datetime, date
 from decimal import Decimal
 
-from .custom_rules import validate_currency
+from app.handlers.input_params.validation.custom_rules import validate_currency
 
 
 def strptime_curried(dt_fmt):

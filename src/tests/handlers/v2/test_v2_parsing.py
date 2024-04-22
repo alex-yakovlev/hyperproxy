@@ -1,6 +1,6 @@
 import pytest
 
-from app.handlers.input_params.parsing.parsing import parse_params
+from app.handlers.v2.input_params.parsing import parse_params
 
 import yarl
 import multidict

@@ -1,5 +1,4 @@
-from .nmt_check import NMT_CheckHandler
-from .client_check import ClientCheckHandler
-from .payment import PaymentHandler
+from . import v1
+from . import v2
 
-__all__ = [NMT_CheckHandler, ClientCheckHandler, PaymentHandler]
+__all__ = [v1, v2]

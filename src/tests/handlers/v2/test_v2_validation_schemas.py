@@ -8,7 +8,7 @@ import cerberus.errors
 # import iso_4217
 
 from app.handlers.input_params.validation.validator import Validator
-from app.handlers.input_params.validation.schemas import PAYMENT_PARAMS_SCHEMA
+from app.handlers.v2.input_params.validation_schemas import PAYMENT_PARAMS_SCHEMA
 
 
 DELETE_DICT_KEY = mock.sentinel.delete_dict_key

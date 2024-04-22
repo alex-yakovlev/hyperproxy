@@ -1,18 +1,18 @@
 import functools
 
-from .parsing import parse_params
 
-
-def with_parsed_params():
+def with_parsed_params(params_parser):
     '''
     Декоратор, который парсит входные параметры и сохраняет их в объекте `request`
     для дальнейшего использования
+
+    Args:
+        params_parser (function): функция, которая парсит параметры
 
     Returns:
         function: декоратор
     '''
 
-    # `wrapper` для единообразия с остальными декораторами, здесь можно было бы обойтись без него
     def wrapper(handler):
         '''
         Args:
@@ -29,7 +29,7 @@ def with_parsed_params():
                 *: результат вызова исходного обработчика
             '''
 
-            params = parse_params(self.request.query)
+            params = params_parser(self.request.query)
             self.request['method_params_raw'] = params
 
             return await handler(self)

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--! см. https://genshi.edgewall.org/wiki/Documentation/xml-templates.html -->
+<Response xmlns:py="http://genshi.edgewall.org/">
+  <Result>${'OK' if success else 'NOT OK'}</Result>
+  <ErrCode>${0 if success else error_code}</ErrCode>
+  <Description>
+    <py:if test="defined('validation_errors')">
+      <py:for each="field, errors in validation_errors.items()">
+        ${field} – ${errors[0]}
+      </py:for>
+    </py:if>
+  </Description>
+</Response>
