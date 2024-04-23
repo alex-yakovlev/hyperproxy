@@ -121,16 +121,12 @@ class TestMiddleware:
         )
         ValidatorMock.return_value.validated.return_value = mock.sentinel.params_normalized
 
-        render_error_mock = mock.AsyncMock(
-            return_value=aiohttp.web.Response(text='decorator error response')
-        )
-
         class DummyHandler(aiohttp.web.View):
-            @with_validated_params(render_error_mock, mock.sentinel.schema)
+            @with_validated_params(mock.sentinel.schema)
             async def get(self):
                 return aiohttp.web.Response(text='decorated handler response')
 
-        return (DummyHandler, ValidatorMock, render_error_mock)
+        return (DummyHandler, ValidatorMock)
 
     @staticmethod
     @pytest.fixture
@@ -158,13 +154,13 @@ class TestMiddleware:
 
     @pytest.mark.asyncio
     async def test_failed_validation(self, decorated_handler_setup, request_mock):
-        decorated_handler, ValidatorMock, render_error_mock = decorated_handler_setup
+        from app import exceptions
+
+        decorated_handler, ValidatorMock = decorated_handler_setup
         type(ValidatorMock.return_value).is_document_valid = mock.PropertyMock(return_value=False)
 
-        response = await decorated_handler(request_mock)
+        with pytest.raises(exceptions.InputValidationError) as exc_info:
+            await decorated_handler(request_mock)
 
         ValidatorMock.return_value.validated.assert_called_once_with(mock.sentinel.params_parsed)
-        render_error_mock.assert_called_once_with(
-            mock.sentinel.app_templates, mock.sentinel.validation_errors
-        )
-        assert response.text == 'decorator error response'
+        assert exc_info.value.errors == mock.sentinel.validation_errors

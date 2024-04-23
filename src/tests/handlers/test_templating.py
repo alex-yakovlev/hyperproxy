@@ -7,7 +7,7 @@ import aiohttp.web
 import genshi.template
 
 from app.handlers.templating.rendering import Template, render_response
-from app.handlers.templating.middleware import with_template_response
+from app.handlers.templating.middleware import with_public_response
 
 
 class TestTemplate:
@@ -62,10 +62,11 @@ class TestMiddleware:
     @staticmethod
     @pytest.fixture
     def request_mock():
-        request = aio_test_utils.make_mocked_request('GET', '/baz')
+        request = aio_test_utils.make_mocked_request('GET', '/quux')
         request.app['templates'] = {
             'foo': mock.sentinel.foo_template,
             'bar': mock.sentinel.bar_template,
+            'baz': mock.sentinel.baz_template,
         }
 
         return request
@@ -74,24 +75,59 @@ class TestMiddleware:
     @mock.patch('app.handlers.templating.middleware.render_response', autospec=True)
     async def test_handler_context(self, patched_render, request_mock):
         class DecoratedHandler(aiohttp.web.View):
-            @with_template_response('foo')
+            @with_public_response('foo', 'bar', mock.Mock(), {'status': 200})
             async def get(self):
                 return mock.sentinel.render_context
 
-        patched_render.return_value = aiohttp.web.Response(text='decorator response')
+        patched_render.side_effect = lambda t, *a, **kw: \
+            aiohttp.web.Response(
+                text=('error response' if t == mock.sentinel.bar_template else 'normal response')
+            )
 
         response = await DecoratedHandler(request_mock)
 
-        assert response.text == 'decorator response'
+        assert response.text == 'normal response'
         patched_render.assert_called_once_with(
-            mock.sentinel.foo_template, mock.sentinel.render_context
+            mock.sentinel.foo_template, mock.sentinel.render_context, status=200
         )
 
     @pytest.mark.asyncio
     @mock.patch('app.handlers.templating.middleware.render_response', autospec=True)
+    async def test_handler_error(self, patched_render, request_mock):
+        from app import exceptions
+
+        error_response_handler_mock = mock.Mock(
+            return_value=(mock.sentinel.error_context, {'status': 403})
+        )
+
+        handler_error = exceptions.AppException('decorated handler error')
+
+        class DecoratedHandler(aiohttp.web.View):
+            @with_public_response('foo', 'bar', error_response_handler_mock, {'status': 200})
+            async def get(self):
+                raise handler_error
+
+        patched_render.side_effect = lambda t, *a, **kw: \
+            aiohttp.web.Response(
+                text=('error response' if t == mock.sentinel.bar_template else 'normal response')
+            )
+
+        response = await DecoratedHandler(request_mock)
+
+        assert response.text == 'error response'
+        error_response_handler_mock.assert_called_once_with(handler_error)
+        patched_render.assert_called_once_with(
+            mock.sentinel.bar_template, mock.sentinel.error_context, status=403
+        )
+
+    @pytest.mark.asyncio
+    @mock.patch(
+        'app.handlers.templating.middleware.render_response',
+        autospec=True, return_value=aiohttp.web.Response(text='dummy response')
+    )
     async def test_handler_response(self, patched_render, request_mock):
         class DecoratedHandler(aiohttp.web.View):
-            @with_template_response('foo')
+            @with_public_response('foo', 'bar', mock.Mock)
             async def get(self):
                 return aiohttp.web.Response(text='decorated handler response')
 

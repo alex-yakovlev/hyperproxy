@@ -24,4 +24,4 @@ EXPOSE $APP_LISTEN_PORT
 
 # см. https://github.com/krallin/tini
 ENTRYPOINT ["/sbin/tini", "--"]
-CMD ["poetry", "run", "python", "src/app/server.py"]
+CMD ["poetry", "run", "python", "src/app/main.py"]

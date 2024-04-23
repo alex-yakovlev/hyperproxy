@@ -1,18 +1,19 @@
 import functools
 
+from app import exceptions
 from .validator import Validator
 from .error_handling import InputParamsErrorHandler
 
 
-def with_validated_params(error_renderer, schema):
+def with_validated_params(schema):
     '''
     Декоратор, валидирущий входные параметры. В случае успешной валидации сохраняет
     нормализованные параметры в объекте `request` и передает управление исходному обработчику,
-    иначе возвращает ответ, содержащий описание ошибок валидации.
+    иначе бросает исключение, содержащее описание ошибок валидации.
     Зависит от декоратора `with_parsed_params`.
+    Полагается на то, что декоратор `with_public_response` ловит возможные исключения.
 
     Args:
-        error_renderer (function): функция, которая возвращает ответ в случае ошибки валидации
         schema (dict): схема в формате Cerberus
 
     Returns:
@@ -35,13 +36,15 @@ def with_validated_params(error_renderer, schema):
             '''
             Returns:
                 *: результат вызова исходного обработчика
-                или сразу ответ (`aiohttp.web.Response`) в случае неуспешной валидации
+
+            Raises:
+                exceptions.InputValidationError: в случае неуспешной валидации
             '''
 
             params = self.request.pop('method_params_raw', {})
             params_normalized = validator.validated(params)
             if not validator.is_document_valid:
-                return await error_renderer(self.request.app['templates'], validator.errors)
+                raise exceptions.InputValidationError(validator.errors)
 
             self.request['method_params'] = params_normalized
 

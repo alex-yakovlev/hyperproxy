@@ -1,0 +1,65 @@
+services:
+  dev_db:
+    image: postgres:15
+
+    environment: &db_env
+      POSTGRES_DB: dev-db
+      POSTGRES_USER: dev
+      POSTGRES_PASSWORD: dev-pwd
+
+    volumes:
+      - type: bind
+        source: ./db
+        target: /home/dumps
+      - type: volume
+        source: pgdata
+        target: /var/lib/postgresql/data
+        volume:
+          nocopy: true
+
+  dev_app:
+    build: .
+
+    environment:
+      <<: *db_env
+      POSTGRES_HOST: dev_db
+      ENV: dev
+      PAYMENT_API_MOCK_ORIGIN: 'http://payment_api_mock:8080'
+
+    command: ash
+    tty: true
+
+    ports:
+      - '3002:8080'
+
+    volumes:
+      - type: bind
+        source: .
+        target: /app
+      - type: volume
+        target: /app/.venv
+
+    depends_on:
+      dev_db:
+        condition: service_started
+        restart: true
+
+      payment_api_mock:
+        condition: service_started
+
+  payment_api_mock:
+    build:
+      context: ./dev_utils
+
+    environment:
+      PORT: 8080
+
+    tty: true
+
+    volumes:
+      - type: bind
+        source: ./dev_utils/src
+        target: /app/src
+
+volumes:
+  pgdata:

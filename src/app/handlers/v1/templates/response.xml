@@ -1,14 +1,40 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <!--! см. https://genshi.edgewall.org/wiki/Documentation/xml-templates.html -->
+
+<?python
+  from datetime import datetime, date, time
+
+  def is_temporal_obj(obj):
+    return isinstance(obj, (datetime, date, time))
+?>
+
 <Response xmlns:py="http://genshi.edgewall.org/">
   <Result>${'OK' if success else 'NOT OK'}</Result>
   <ErrCode>${0 if success else error_code}</ErrCode>
-  <Description>
-    <py:if test="defined('validation_errors')">
+
+  <Description py:choose="">
+    <py:when test="defined('description')">${description}</py:when>
+
+    <py:when test="not success and defined('validation_errors')">
       <py:for each="field, errors in validation_errors.items()">
         ${field} – ${errors[0]}
       </py:for>
-    </py:if>
+    </py:when>
   </Description>
+
+  <Id py:if="defined('opid')">${opid}</Id>
+  <PaymExtId py:if="defined('initiator_opid')">${initiator_opid}</PaymExtId>
+  <PaymNumb py:if="defined('payment_no')">${payment_no}</PaymNumb>
+  <BillRegId py:if="defined('bill_reg_id')">${bill_reg_id}</BillRegId>
+
+  <PaymDate py:if="defined('payment_date')">${payment_date.isoformat()}</PaymDate>
+
+  <ExtInfo py:if="defined('ext_info')">
+    <py:for each="name, value in ext_info.items()">
+      <Tag py:attrs="{'name': name}">
+        ${value if not is_temporal_obj(value) else value.isoformat()}
+      </Tag>
+    </py:for>
+  </ExtInfo>
 </Response>

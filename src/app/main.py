@@ -4,10 +4,14 @@ import os
 
 import aiohttp.web
 import aiohttp.web_exceptions
+import sqlalchemy
+import sqlalchemy.ext.asyncio as async_alchemy
 
 from app import constants
+from app.database import models, migrations
 from app import handlers
 from app.handlers.templating import TemplateLoader
+from app.handlers import payment_apis
 from app import router
 from app.utils import config
 
@@ -15,6 +19,40 @@ from app.utils import config
 QUERY_HANDLER = contextvars.ContextVar('query_handler')
 
 TEMPLATES_ROOT = os.path.join(os.path.dirname(__file__), 'handlers')
+
+
+async def prepare_database(app):
+    engine = async_alchemy.create_async_engine(
+        sqlalchemy.URL.create(
+            drivername='postgresql+asyncpg',
+            host=config.get('POSTGRES_HOST'),
+            database=config.get('POSTGRES_DB'),
+            username=config.get('POSTGRES_USER'),
+            password=config.get('POSTGRES_PASSWORD'),
+        ),
+        echo=config.get('ENV') == 'dev'
+    )
+
+    Session = async_alchemy.async_sessionmaker(engine)
+    app['db_sessionmaker'] = Session
+
+    async with engine.begin() as conn:
+        await conn.run_sync(models.Base.metadata.create_all)
+
+    await migrations.apply_migrations(Session)
+
+    yield
+
+    await engine.dispose()
+
+
+async def prepare_payment_APIs(app):
+    service = payment_apis.PaymentService()
+    app['payment_service'] = service
+
+    yield
+
+    await service.cleanup()
 
 
 async def prepare_templates(app):
@@ -57,6 +95,8 @@ def make_app():
 
     app.router.add_view('/', RootHandler)
 
+    app.cleanup_ctx.append(prepare_database)
+    app.cleanup_ctx.append(prepare_payment_APIs)
     app.on_startup.append(prepare_templates)
 
     return app
