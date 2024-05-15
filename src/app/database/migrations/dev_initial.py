@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 import sqlalchemy
@@ -13,6 +14,8 @@ async def apply(session):
     if config.get('ENV') != 'dev':
         return
 
+    now = utils.get_current_datetime()
+
     dummy_payment_system = models.PaymentSystem(
         api_origin=config.get('PAYMENT_API_MOCK_ORIGIN'),
         name='default'
@@ -23,28 +26,42 @@ async def apply(session):
         payment_system=dummy_payment_system,
     )
     dummy_balance = models.Balance(
-        partnership=dummy_partnership, balance=10000, currency='USD',
+        partnership=dummy_partnership, amount=10000, currency='USD'
     )
-    dummy_condition = models.ServiceFee(
-        partnership=dummy_partnership,
-        service_type='0001',
-        initiator_currency='EUR',
-        fix=1,
-        percent=Decimal('0.02'),
-        payment_system_percent=Decimal('0.02'),
-        insurance=Decimal('0.02'),
-        active_from=utils.get_current_datetime(),
-    )
+    dummy_conditions = [
+        models.ServiceFee(
+            partnership=dummy_partnership,
+            service_type='0001',
+            initiator_currency='EUR',
+            fix=1,
+            percent=Decimal('0.02'),
+            payment_system_percent=Decimal('0.02'),
+            insurance=Decimal('0.02'),
+            active_from=now - timedelta(days=5),
+            active_until=now + timedelta(hours=1),
+        ),
+        models.ServiceFee(
+            partnership=dummy_partnership,
+            service_type='0001',
+            initiator_currency='EUR',
+            fix=2,
+            percent=Decimal('0.02'),
+            payment_system_percent=Decimal('0.02'),
+            insurance=Decimal('0.02'),
+            active_from=now,
+        ),
+    ]
     dummy_currency = models.ServiceCurrency(
         partnership=dummy_partnership, service_type='0001', currency='CAD', country='CAN'
     )
     dummy_operation = models.Operation(
         opid='098c4cef-9161-4f2e-a039-f63a5a7ab105',
+        fingerprint='85d10c5edfbe11303840fb4e0c6a5b897883f04f33b9904eb86325f4b2c1507a',
         partnership=dummy_partnership,
         initiator_opid='7b9bb88e5b',
         status=constants.OperationStatus.NEW,
         initial_amount=100,
-        initiator_currency=dummy_condition.initiator_currency,
+        initiator_currency=dummy_conditions[0].initiator_currency,
         customer_amount=Decimal('136.3710471589199998225373425'),
         customer_currency=dummy_currency.currency,
         amount_to_deduct=Decimal('106.212'),
@@ -63,7 +80,7 @@ async def apply(session):
             dummy_payment_system,
             dummy_partnership,
             dummy_balance,
-            dummy_condition,
+            *dummy_conditions,
             dummy_currency,
             dummy_operation
         ])

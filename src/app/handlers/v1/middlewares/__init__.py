@@ -6,19 +6,10 @@ from app import exceptions
 from app.database import models
 from app.handlers import input_params, templating
 from ..input_params.parsing import parse_params
+from .error_handling import get_error_response_data
 
 
 TEMPLATE_KEY = 'v1_response'
-
-
-def get_error_response_data(error):
-    context = {'success': False}
-    response_params = {}
-
-    if isinstance(error, exceptions.InputValidationError):
-        return {**context, 'error_code': 1, 'validation_errors': error.errors}, response_params
-
-    return context, response_params
 
 
 with_parsed_params = functools.partial(input_params.with_parsed_params, parse_params)

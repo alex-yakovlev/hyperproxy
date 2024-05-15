@@ -30,6 +30,8 @@
 
   <PaymDate py:if="defined('payment_date')">${payment_date.isoformat()}</PaymDate>
 
+  <Balance py:if="defined('balance')">${balance}</Balance>
+
   <ExtInfo py:if="defined('ext_info')">
     <py:for each="name, value in ext_info.items()">
       <Tag py:attrs="{'name': name}">

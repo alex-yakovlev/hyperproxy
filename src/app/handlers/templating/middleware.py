@@ -63,9 +63,6 @@ def with_public_response(
                 return await render_response(
                     error_template, context, **{**response_kwargs, **error_resp_kwargs}
                 )
-            except Exception:
-                # TODO не пропускать непредвиденные исключения пользователям
-                raise
 
         return wrapped
 

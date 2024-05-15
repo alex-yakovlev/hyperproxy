@@ -25,6 +25,8 @@ services:
       POSTGRES_HOST: dev_db
       ENV: dev
       PAYMENT_API_MOCK_ORIGIN: 'http://payment_api_mock:8080'
+      HASH_SALT: 'foo'
+      OPERATION_LIFETIME: 600
 
     command: ash
     tty: true

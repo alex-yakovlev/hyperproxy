@@ -80,7 +80,11 @@ class MockHandler(server.BaseHTTPRequestHandler):
     @staticmethod
     def POST_create_order():
         return {'orders': [
-            {'amount': '123', 'currency': 'USD'},
+            {
+                'id': '001',
+                'status': 'credited',
+                'amount': '123', 'currency': 'USD'
+            },
         ]}
 
 
