@@ -7,7 +7,7 @@ from multidict import MultiDict
 import cerberus.errors
 
 from app.handlers.input_params.validation.validator import Validator
-from app.handlers.v1.input_params.validation_schemas import (
+from app.handlers.v1.input_params.validation import (
     CHECK_PARAMS_SCHEMA, PAYMENT_PARAMS_SCHEMA
 )
 

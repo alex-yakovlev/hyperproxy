@@ -1,5 +1,7 @@
 import asyncio
 import contextvars
+import json
+from functools import partial
 import os
 
 import aiohttp.web
@@ -12,7 +14,7 @@ from app.database import models, migrations
 from app import handlers
 from app.handlers.templating import TemplateLoader
 from app.handlers import payment_apis
-from app import router
+from app import app_logging, router
 from app.utils import config
 
 
@@ -30,6 +32,8 @@ async def prepare_database(app):
             username=config.get('POSTGRES_USER'),
             password=config.get('POSTGRES_PASSWORD'),
         ),
+        # JSON-поля есть только в таблице `logs`
+        json_serializer=partial(json.dumps, cls=app_logging.JSONEncoder, ensure_ascii=False),
         echo=config.get('ENV') == 'dev'
     )
 
@@ -44,6 +48,16 @@ async def prepare_database(app):
     yield
 
     await engine.dispose()
+
+
+async def prepare_logging(app):
+    service = app_logging.LoggingService(app.get('db_sessionmaker'))
+    await service.start()
+    app['logger'] = service.logger
+
+    yield
+
+    await service.stop()
 
 
 async def prepare_payment_APIs(app):
@@ -96,6 +110,7 @@ def make_app():
     app.router.add_view('/', RootHandler)
 
     app.cleanup_ctx.append(prepare_database)
+    app.cleanup_ctx.append(prepare_logging)
     app.cleanup_ctx.append(prepare_payment_APIs)
     app.on_startup.append(prepare_templates)
 

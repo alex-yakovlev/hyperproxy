@@ -187,3 +187,16 @@ class Operation(Base, SelectBuilderMixin):
         '''
 
         return created_at > active_at - timedelta(seconds=OPERATION_LIFETIME)
+
+
+class LogEntry(Base):
+    __tablename__ = 'logs'
+
+    # CRITICAL – самое длинное название уровня
+    level = orm.mapped_column(sql_types.String(len('CRITICAL')), nullable=False)
+    # не `ForeignKey`, т.к. в момент логирования операции может еще не существовать
+    opid = uuid_column()
+    partnership_id = orm.mapped_column(sqlalchemy.ForeignKey('domains.id'))
+    initiator_opid = external_opid_column()
+    data = orm.mapped_column(sql_types.JSON, nullable=False)
+    logged_at = timestamp_column()

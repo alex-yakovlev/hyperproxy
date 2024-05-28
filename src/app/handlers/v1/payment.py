@@ -8,10 +8,14 @@ from app import constants, exceptions, utils
 from app.database import models
 from ..payment_apis import exceptions as payment_exceptions
 from .middlewares import (
-    with_public_response, with_parsed_params, with_validated_params, with_initial_db_data
+    with_shared_context,
+    with_public_response,
+    with_parsed_params, with_validated_params,
+    with_initial_db_data
 )
-from .input_params.validation_schemas import PAYMENT_PARAMS_SCHEMA
+from .input_params.validation import PAYMENT_PARAMS_SCHEMA
 from .base import BaseHandler
+from .utils import redact_input_data
 
 
 # 🫡
@@ -26,6 +30,7 @@ def _create_dummy_birth_date():
 
 
 class PaymentHandler(BaseHandler):
+    @with_shared_context(lambda req: {'api_method': 'payment'})
     @with_public_response()
     @with_parsed_params()
     @with_validated_params(PAYMENT_PARAMS_SCHEMA)
@@ -37,36 +42,53 @@ class PaymentHandler(BaseHandler):
 
         call_start = utils.get_current_datetime()
 
-        partnership = self.request['partnership']
-        payment_system = self.request['payment_system']
+        mdw_shared = self.request['mdw_shared']
+        partnership = mdw_shared['partnership']
+        payment_system = mdw_shared['payment_system']
+        input_params = mdw_shared['method_params']
 
-        input_params = self.request['method_params']
-
-        paymentAPI = await self.request.app['payment_service'].get_payment_API(payment_system)
+        logger = self._extend_logger({
+            'partnership_id': partnership.id,
+            'opid': input_params['id'],
+            'initiator_opid': input_params['PaymExtId'],
+        })
+        logger.info(
+            'Первичные проверки прошли успешно; начало работы метода `payment`',
+            extra={'params': redact_input_data(input_params)}
+        )
 
         Session = self.request.app['db_sessionmaker']
         async with Session(expire_on_commit=False) as session:
             async with session.begin():
                 balance = await self._get_balance(session, {'partnership': partnership})
 
+                logger.info('Поиск операции по идентификатору')
                 operation = await self._get_current_operation(session)
                 if operation.status == constants.OperationStatus.COMPLETED:
+                    logger.warning(
+                        'Метод вызван повторно после успешного завершения операции; '
+                        'вызов не будет обработан'
+                    )
                     return self._operation_success(operation, balance)
                 # операция может быть фактически истекшей, но еще не помеченной обходчиком
                 if operation.is_expired(call_start):
-                    raise exceptions.OperationExpired(operation.opid)
+                    raise exceptions.OperationExpired()
 
+                logger.info('Проверка баланса инициатора')
                 if balance.amount <= 0:
                     raise exceptions.InsufficientBalance()
-
-                operation.status = constants.OperationStatus.PAYMENT_INITIALIZED
-                session.add(operation)
 
                 service_currency = await self._get_service_currency(
                     session,
                     {'partnership': partnership, 'service_type': input_params['PaymSubjTp']}
                 )
 
+                logger.info('Обновление статуса операции')
+                operation.status = constants.OperationStatus.PAYMENT_INITIALIZED
+                session.add(operation)
+
+            logger.info('Запрос к API на выполнение перевода')
+            paymentAPI = await self.request.app['payment_service'].get_payment_API(payment_system)
             try:
                 payment = await paymentAPI.place_order({
                     'amount': operation.customer_amount,
@@ -81,6 +103,7 @@ class PaymentHandler(BaseHandler):
                 })
             except payment_exceptions.API_Error as error:
                 async with session.begin():
+                    logger.info('Перевод не выполнен; обновление статуса операции')
                     operation.status = constants.OperationStatus.PAYMENT_FAILED
                     operation.finished_at = utils.get_current_datetime()
                     session.add(operation)
@@ -88,12 +111,14 @@ class PaymentHandler(BaseHandler):
                 raise exceptions.PaymentError() from error
 
             async with session.begin():
+                logger.info('Обновление данных операции')
                 operation.status = constants.OperationStatus.COMPLETED
                 operation.payment_system_opid = payment['opid']
                 operation.payment_system_status = payment['status']
                 operation.finished_at = utils.get_current_datetime()
                 session.add(operation)
 
+                logger.info('Обновление баланса инициатора')
                 # Возвращаемое значение — сумма баланса *в момент начала транзакции*,
                 # уменьшенная на сумму платежа,
                 # но в результате транзакции обновление происходит корректно
@@ -109,6 +134,7 @@ class PaymentHandler(BaseHandler):
                     .returning(models.Balance)
                 )).scalar_one()
 
+        logger.info('Завершение работы метода `payment`')
         return self._operation_success(operation, balance)
 
     async def _get_current_operation(self, session):
@@ -126,16 +152,16 @@ class PaymentHandler(BaseHandler):
                 (отличаются сумма, валюта или получатель)
             exceptions.OperationInProgress: если у найденной операции статус `PAYMENT_INITIALIZED`
                 (уже обрабатывается более ранний запрос payment для этой операции)
-            exceptions.OperationFailed: если у найденной операции статус `PAYMENT_FAILED`
-                (был запрос payment для этой операции, закончившийся неуспешно)
-            exceptions.OperationExpired: если у найденной операции статус `EXPIRED`
-                (в процессе периодического обхода незаконченная операция была помечена
+            exceptions.OperationIneligible: если найденная операция в статусе,
+                исключающем проведение платежа
+                (был запрос payment для этой операции, закончившийся неуспешно,
+                или в процессе периодического обхода незаконченная операция была помечена
                 как истекшая)
         '''
 
-        partnership = self.request['partnership']
+        partnership = self.request['mdw_shared']['partnership']
 
-        input_params = self.request['method_params']
+        input_params = self.request['mdw_shared']['method_params']
         opid = input_params['id']
 
         operations = await self._get_operations(
@@ -145,7 +171,7 @@ class PaymentHandler(BaseHandler):
         try:
             operation = operations[0]
         except IndexError:
-            raise exceptions.NonCheckedOperation(opid)
+            raise exceptions.NonCheckedOperation()
 
         fingerprint = models.Operation.generate_fingerprint(
             input_params['1'],
@@ -153,17 +179,15 @@ class PaymentHandler(BaseHandler):
             input_params['PaymSubjTp']
         )
         if operation.fingerprint != fingerprint:
-            raise exceptions.NonMatchingFingerprints(opid)
+            raise exceptions.NonMatchingFingerprints()
 
         match operation.status:
             case constants.OperationStatus.NEW | constants.OperationStatus.COMPLETED:
                 return operation
             case constants.OperationStatus.PAYMENT_INITIALIZED:
-                raise exceptions.OperationInProgress(opid)
-            case constants.OperationStatus.PAYMENT_FAILED:
-                raise exceptions.OperationFailed(opid)
-            case constants.OperationStatus.EXPIRED:
-                raise exceptions.OperationExpired(opid)
+                raise exceptions.OperationInProgress()
+            case _:
+                raise exceptions.OperationIneligible()
 
     async def _get_operations(self, session, params):
         return (await session.scalars(

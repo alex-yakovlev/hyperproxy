@@ -115,7 +115,7 @@ class TestMiddleware:
         response = await DecoratedHandler(request_mock)
 
         assert response.text == 'error response'
-        error_response_handler_mock.assert_called_once_with(handler_error)
+        error_response_handler_mock.assert_called_once_with(request_mock, handler_error)
         patched_render.assert_called_once_with(
             mock.sentinel.bar_template, mock.sentinel.error_context, status=403
         )

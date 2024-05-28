@@ -55,6 +55,22 @@ class TestValidator:
         assert len(validator.errors) == 1
         assert cerberus.errors.COERCION_FAILED in validator.document_error_tree['foo']
 
+    def test_unknown_values(self):
+        schema = {
+            'foo': {
+                'type': 'string',
+            },
+        }
+        validator = Validator(schema, require_all=True)
+        data = MultiDict([
+            ('foo', 'bar'), ('bar', 'baz')
+        ])
+
+        data_normalized = validator.validated(data)
+        assert data_normalized is None
+        assert len(validator.errors) == 1
+        assert cerberus.errors.UNKNOWN_FIELD in validator.document_error_tree['bar']
+
     def test_multiple_values(self):
         schema = {
             'foo': {
@@ -133,7 +149,7 @@ class TestMiddleware:
     def request_mock():
         request = aio_test_utils.make_mocked_request('GET', '/foo')
         request.app['templates'] = mock.sentinel.app_templates
-        request['method_params_raw'] = mock.sentinel.params_parsed
+        request['mdw_shared'] = {'method_params_raw': mock.sentinel.params_parsed}
 
         return request
 
@@ -148,8 +164,9 @@ class TestMiddleware:
         response = await decorated_handler(request_mock)
 
         ValidatorMock.return_value.validated.assert_called_once_with(mock.sentinel.params_parsed)
-        assert request_mock.get('method_params') == mock.sentinel.params_normalized
-        assert 'method_params_raw' not in request_mock
+        mdw_shared = request_mock['mdw_shared']
+        assert mdw_shared.get('method_params') == mock.sentinel.params_normalized
+        assert 'method_params_raw' not in mdw_shared
         assert response.text == 'decorated handler response'
 
     @pytest.mark.asyncio

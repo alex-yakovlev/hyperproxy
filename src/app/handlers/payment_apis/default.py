@@ -54,7 +54,7 @@ class PaymentAPI(base.PaymentAPI):
             order = resp_data['orders'][0]
             return {
                 'opid': order['id'],
-                'status': order.get['status'],
+                'status': order.get('status'),
                 'amount': order.get('amount'),
             }
 

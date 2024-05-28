@@ -41,12 +41,14 @@ def with_validated_params(schema):
                 exceptions.InputValidationError: в случае неуспешной валидации
             '''
 
-            params = self.request.pop('method_params_raw', {})
+            mdw_shared = self.request['mdw_shared'] = self.request.get('mdw_shared', {})
+            params = mdw_shared.get('method_params_raw', {})
             params_normalized = validator.validated(params)
             if not validator.is_document_valid:
                 raise exceptions.InputValidationError(validator.errors)
 
-            self.request['method_params'] = params_normalized
+            mdw_shared.pop('method_params_raw', None)
+            mdw_shared['method_params'] = params_normalized
 
             return await handler(self)
 

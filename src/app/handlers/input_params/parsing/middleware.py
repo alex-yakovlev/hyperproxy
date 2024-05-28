@@ -30,7 +30,8 @@ def with_parsed_params(params_parser):
             '''
 
             params = params_parser(self.request.query)
-            self.request['method_params_raw'] = params
+            mdw_shared = self.request['mdw_shared'] = self.request.get('mdw_shared', {})
+            mdw_shared['method_params_raw'] = params
 
             return await handler(self)
 

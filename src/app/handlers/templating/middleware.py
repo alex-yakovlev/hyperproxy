@@ -59,7 +59,7 @@ def with_public_response(
                 return await render_response(template, context, **response_kwargs)
             except exceptions.AppException as error:
                 error_template = template_registry[error_template_key]
-                context, error_resp_kwargs = error_response_handler(error)
+                context, error_resp_kwargs = error_response_handler(self.request, error)
                 return await render_response(
                     error_template, context, **{**response_kwargs, **error_resp_kwargs}
                 )

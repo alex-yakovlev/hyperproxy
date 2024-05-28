@@ -1,7 +1,7 @@
 import aiohttp.web
 import sqlalchemy
 
-from app import exceptions
+from app import exceptions, app_logging
 from app.utils import finance
 from app.database import models
 
@@ -27,7 +27,7 @@ class BaseHandler(aiohttp.web.View):
         )).first()
 
         if fee_terms is None:
-            raise exceptions.UnknownServiceType(params['service_type'])
+            raise exceptions.UnknownFeeTerms(params['service_type'])
 
         return fee_terms
 
@@ -38,7 +38,7 @@ class BaseHandler(aiohttp.web.View):
         )).first()
 
         if service_currency is None:
-            raise exceptions.UnknownServiceType(params['service_type'])
+            raise exceptions.UnknownCurrencySettings(params['service_type'])
 
         return service_currency
 
@@ -50,3 +50,14 @@ class BaseHandler(aiohttp.web.View):
             'balance': finance.quantize(balance.amount, balance.currency),
             'ext_info': {},
         }
+
+    def _extend_logger(self, extra):
+        logger = self.request['mdw_shared']['logger'] = app_logging.LoggerAdapter(
+            self.request.app['logger'],
+            {
+                'api_method': self.request['mdw_shared'].get('api_method'),
+                **extra,
+            }
+        )
+
+        return logger

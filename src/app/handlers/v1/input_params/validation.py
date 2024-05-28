@@ -165,3 +165,10 @@ PAYMENT_PARAMS_SCHEMA = merge_schemas(
         },
     }
 )
+
+
+# параметры, значения которых можно хранить/выводить открытым текстом
+PARAMS_PLAINTEXT_VALUES = {
+    'Amount', 'PaymExtId', 'PaymSubjTp', 'TermType', 'TermId', 'id',
+    '807', '907',
+}

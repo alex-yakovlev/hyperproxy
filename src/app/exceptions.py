@@ -14,16 +14,17 @@ class MissingDomainHeader(AppException):
 # ------------------------- BEGIN ------------------------- #
 
 class PartnershipError(AppException):
+    pass
+
+
+class PartnershipNotFound(PartnershipError):
     def __init__(self, domain):
         self.domain = domain
 
 
-class PartnershipNotFound(PartnershipError):
-    pass
-
-
 class PartnershipInactive(PartnershipError):
-    pass
+    def __init__(self, partnership):
+        self.partnership = partnership
 
 # -------------------------- END -------------------------- #
 
@@ -31,8 +32,7 @@ class PartnershipInactive(PartnershipError):
 # ------------------------- BEGIN ------------------------- #
 
 class OperationLookupError(AppException):
-    def __init__(self, opid):
-        self.opid = opid
+    pass
 
 
 class NonCheckedOperation(OperationLookupError):
@@ -43,7 +43,7 @@ class OperationInProgress(OperationLookupError):
     pass
 
 
-class OperationFailed(OperationLookupError):
+class OperationIneligible(OperationLookupError):
     pass
 
 
@@ -57,26 +57,40 @@ class NonMatchingFingerprints(OperationLookupError):
 # -------------------------- END -------------------------- #
 
 
-class AmbiguousOperation(AppException):
-    def __init__(self, fingerprint):
-        self.fingerprint = fingerprint
-
-
-class InsufficientBalance(AppException):
-    pass
-
-
-class NegativeTransferAmount(AppException):
-    pass
-
+# ------------------------- BEGIN ------------------------- #
 
 class UnknownServiceType(AppException):
     def __init__(self, service_type):
         self.service_type = service_type
 
 
-class CurrencyConversionError(AppException):
+class UnknownFeeTerms(UnknownServiceType):
     pass
+
+
+class UnknownCurrencySettings(UnknownServiceType):
+    pass
+
+# -------------------------- END -------------------------- #
+
+
+class AmbiguousOperation(AppException):
+    def __init__(self, fingerprint):
+        self.fingerprint = fingerprint
+
+
+class InsufficientBalance(AppException):
+    def __init__(self, balance):
+        self.balance = balance
+
+
+class NegativeTransferAmount(AppException):
+    pass
+
+
+class CurrencyConversionError(AppException):
+    def __init__(self, exchange_rates=None):
+        self.exchange_rates = exchange_rates
 
 
 class PaymentError(AppException):

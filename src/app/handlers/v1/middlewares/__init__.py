@@ -6,7 +6,7 @@ from app import exceptions
 from app.database import models
 from app.handlers import input_params, templating
 from ..input_params.parsing import parse_params
-from .error_handling import get_error_response_data
+from .error_handling import handle_error_response
 
 
 TEMPLATE_KEY = 'v1_response'
@@ -18,8 +18,43 @@ with_validated_params = functools.partial(input_params.with_validated_params)
 
 with_public_response = functools.partial(
     templating.with_public_response,
-    TEMPLATE_KEY, TEMPLATE_KEY, get_error_response_data
+    TEMPLATE_KEY, TEMPLATE_KEY, handle_error_response
 )
+
+
+def with_shared_context(make_context):
+    '''
+    Декоратор, вызывающийся первым в цепочке и инициализирующий общий контекст,
+    доступный последующим декораторам и основному обработчику
+
+    Args:
+        make_context (function): функция, создающая контекст
+
+    Returns:
+        function: декоратор
+    '''
+
+    def wrapper(handler):
+        '''
+        Args:
+            handler (function): декорируемый обработчик, метод class-based view
+
+        Returns:
+            function: декорированный обработчик
+        '''
+
+        @functools.wraps(handler)
+        async def wrapped(self):
+            '''
+            Записывает контекст в поле `mdw_shared` объекта `request`
+            '''
+
+            self.request['mdw_shared'] = make_context(self.request)
+            return await handler(self)
+
+        return wrapped
+
+    return wrapper
 
 
 def with_initial_db_data():
@@ -75,10 +110,11 @@ def with_initial_db_data():
                 raise exceptions.PartnershipNotFound(proxy_domain)
 
             if not partnership.is_active:
-                raise exceptions.PartnershipInactive(partnership.domain)
+                raise exceptions.PartnershipInactive(partnership)
 
-            self.request['partnership'] = partnership
-            self.request['payment_system'] = partnership.payment_system
+            mdw_shared = self.request['mdw_shared'] = self.request.get('mdw_shared', {})
+            mdw_shared['partnership'] = partnership
+            mdw_shared['payment_system'] = partnership.payment_system
 
             return await handler(self)
 
