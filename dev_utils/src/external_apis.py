@@ -19,7 +19,7 @@ class MockHandler(server.BaseHTTPRequestHandler):
         self.end_headers()
 
         req_path = urllib.parse.urlparse(self.path).path
-        if req_path == '/exchange_rates':
+        if req_path == '/exchange_rates/':
             self.wfile.write(_format_response(self.GET_exchange_rates()))
 
     def do_POST(self):

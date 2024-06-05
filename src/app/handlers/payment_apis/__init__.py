@@ -1,5 +1,6 @@
 import asyncio
 
+from app.utils import config
 from . import default
 
 
@@ -12,7 +13,12 @@ class PaymentService:
 
     def __init__(self):
         self._providers = {
-            'default': default.PaymentProvider(),
+            'default': default.PaymentProvider(
+                basic_user=config.get('PAYMENT_API_DEFAULT_USER'),
+                basic_pwd=config.get('PAYMENT_API_DEFAULT_PWD'),
+                cert_path=config.get('PAYMENT_API_DEFAULT_CERT_PATH'),
+                cert_pwd=config.get('PAYMENT_API_DEFAULT_CERT_PWD')
+            ),
         }
 
     async def get_payment_API(self, payment_system):

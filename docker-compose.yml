@@ -2,7 +2,7 @@ services:
   dev_db:
     image: postgres:15
 
-    environment: &db_env
+    environment:
       POSTGRES_DB: dev-db
       POSTGRES_USER: dev
       POSTGRES_PASSWORD: dev-pwd
@@ -21,9 +21,11 @@ services:
     build: .
 
     environment:
-      <<: *db_env
-      POSTGRES_HOST: dev_db
       ENV: dev
+      DB_HOST: dev_db
+      DB_NAME: dev-db
+      DB_USER: dev
+      DB_PASSWORD: dev-pwd
       PAYMENT_API_MOCK_ORIGIN: 'http://payment_api_mock:8080'
       HASH_SALT: 'foo'
       OPERATION_LIFETIME: 600

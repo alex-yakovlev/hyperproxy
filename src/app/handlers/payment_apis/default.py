@@ -1,6 +1,7 @@
 import decimal
 import json
 from functools import partial
+import ssl
 
 import aiohttp
 
@@ -18,7 +19,7 @@ class PaymentAPI(base.PaymentAPI):
 
     async def get_exchange_rates(self, date):
         resp_data, resp = await self._call_api(
-            'GET', '/exchange_rates', params={'date': date.isoformat()}
+            'GET', '/exchange_rates/', params={'date': date.isoformat()}
         )
         try:
             exchange_rates = resp_data['exchange_rates']
@@ -97,8 +98,16 @@ class PaymentProvider(base.PaymentProvider):
     См. базовый класс
     '''
 
-    def __init__(self):
+    def __init__(self, basic_user, basic_pwd, cert_path, cert_pwd):
         self._session = None
+
+        self._basic_auth = aiohttp.BasicAuth(basic_user, basic_pwd)
+
+        ssl_context = self._ssl_context = ssl.create_default_context()
+        ssl_context.check_hostname = False
+        # сертификат самоподписанный
+        ssl_context.verify_mode = ssl.CERT_NONE
+        ssl_context.load_cert_chain(cert_path, password=cert_pwd)
 
     @property
     def is_started(self):
@@ -112,6 +121,8 @@ class PaymentProvider(base.PaymentProvider):
         # см. https://docs.aiohttp.org/en/stable/client_quickstart.html#timeouts
         self._session = aiohttp.ClientSession(
             base_url,
+            connector=aiohttp.TCPConnector(ssl=self._ssl_context),
+            auth=self._basic_auth,
             # raise_for_status=True,
             json_serialize=partial(json.dumps, cls=JSONEncoder)
         )

@@ -27,14 +27,14 @@ async def prepare_database(app):
     engine = async_alchemy.create_async_engine(
         sqlalchemy.URL.create(
             drivername='postgresql+asyncpg',
-            host=config.get('POSTGRES_HOST'),
-            database=config.get('POSTGRES_DB'),
-            username=config.get('POSTGRES_USER'),
-            password=config.get('POSTGRES_PASSWORD'),
+            host=config.get('DB_HOST'),
+            database=config.get('DB_NAME'),
+            username=config.get('DB_USER'),
+            password=config.get('DB_PASSWORD'),
         ),
         # JSON-поля есть только в таблице `logs`
         json_serializer=partial(json.dumps, cls=app_logging.JSONEncoder, ensure_ascii=False),
-        echo=config.get('ENV') == 'dev'
+        echo=config.get('DEBUG_SQL') or False
     )
 
     Session = async_alchemy.async_sessionmaker(engine)
