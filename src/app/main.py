@@ -93,16 +93,8 @@ def make_app():
     ''' /?function=payment '''
     v1_query_router.add_view('payment', handlers.v1.PaymentHandler)
 
-    v2_query_router = router.QueryRouter(query_param=constants.V2_ROUTING_QUERY_PARAM)
-    ''' /?ACTION=nmtcheck '''
-    v2_query_router.add_view('nmtcheck', handlers.v2.NMT_CheckHandler)
-    ''' /?ACTION=clientcheck '''
-    v2_query_router.add_view('clientcheck', handlers.v2.ClientCheckHandler)
-    ''' /?ACTION=payment '''
-    v2_query_router.add_view('payment', handlers.v2.PaymentHandler)
-
     class RootHandler(aiohttp.web.View):
-        @router.custom_routing(QUERY_HANDLER, v1_query_router, v2_query_router)
+        @router.custom_routing(QUERY_HANDLER, v1_query_router)
         async def post(self):
             query_handler = QUERY_HANDLER.get()
             return await query_handler(self.request)
