@@ -1,6 +1,7 @@
 # Все make-команды предназначены для запуска внутри Docker-контейнера
 
 nginx_conf_dir := /etc/nginx/http.d/
+certs_dir := /tmp/certs/
 
 prepare-env:
 	@ echo 'Generating nginx config from template...'
@@ -20,12 +21,11 @@ prepare-env:
 start-app:
 	@ echo 'Starting nginx...'
 	@ nginx -g 'pid /tmp/nginx.pid;'
-	@ echo 'Importing GPG key...'
-	@ echo "$$SOPS_KEY" | gpg --batch --import -
 	@ echo 'Starting app...'
-# 	см. https://github.com/getsops/sops#passing-secrets-to-other-processes
-	@ env_secrets=$$(if [[ "$$APP_ENV" == 'dev' ]]; then echo 'secrets/secrets.dev.yml'; else echo 'secrets/secrets.yml'; fi); \
-	echo $$env_secrets | xargs -I % sops exec-env % "sops exec-file --no-fifo secrets/payment-api-cert_default.pem 'PAYMENT_API_DEFAULT_CERT_PATH={} poetry run python src/app/main.py'"
+	@ mkdir '$(certs_dir)'; \
+	cert_path='$(addprefix $(certs_dir), payment-api-cert_default.pem)'; \
+	echo "$$PAYMENT_API_DEFAULT_CERT" > $$cert_path; \
+	PAYMENT_API_DEFAULT_CERT_PATH=$$cert_path poetry run python src/app/main.py
 
 lint:
 	@ echo 'Running linting...'

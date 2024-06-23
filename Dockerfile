@@ -6,8 +6,6 @@ WORKDIR /app
 RUN apk add \
         tini~=0.19 \
         make~=4.4 \
-        gpg~=2.4 gpg-agent~=2.4 \
-        sops~=3.8 \
         nginx~=1.26 \
         gettext-envsubst~=0.22 \
     && pip3 install poetry~=1.7
@@ -18,14 +16,12 @@ RUN poetry config virtualenvs.in-project true && \
     poetry install --no-root
 
 COPY src ./src
-COPY secrets ./secrets
 COPY Makefile .
 
 # см. https://python-poetry.org/docs/faq/#poetry-busts-my-docker-cache-because-it-requires-me-to-copy-my-source-files-in-before-installing-3rd-party-dependencies
 RUN poetry install --only-root
 
 ARG APP_ENV=production
-ARG SOPS_KEY
 ARG INITIATOR_IPS
 
 ENV APP_LISTEN_PORT=8081
