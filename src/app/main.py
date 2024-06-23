@@ -28,9 +28,10 @@ async def prepare_database(app):
         sqlalchemy.URL.create(
             drivername='postgresql+asyncpg',
             host=config.get('DB_HOST'),
-            database=config.get('DB_NAME'),
+            port=config.get('DB_PORT'),
             username=config.get('DB_USER'),
             password=config.get('DB_PASSWORD'),
+            database=config.get('DB_NAME'),
         ),
         # JSON-поля есть только в таблице `logs`
         json_serializer=partial(json.dumps, cls=app_logging.JSONEncoder, ensure_ascii=False),
