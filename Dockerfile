@@ -5,9 +5,11 @@ WORKDIR /app
 # системные зависимости
 RUN apk add \
         tini~=0.19 \
+        make~=4.4 \
         gpg~=2.4 gpg-agent~=2.4 \
         sops~=3.8 \
-        make~=4.4 \
+        nginx~=1.26 \
+        gettext-envsubst~=0.22 \
     && pip3 install poetry~=1.7
 
 # зависимости проекта
@@ -23,10 +25,15 @@ COPY Makefile .
 RUN poetry install --only-root
 
 ARG APP_ENV=production
-ENV APP_ENV=$APP_ENV
+ARG SOPS_KEY
+ARG INITIATOR_IPS
 
-ENV APP_LISTEN_PORT=8080
-EXPOSE $APP_LISTEN_PORT
+ENV APP_LISTEN_PORT=8081
+ENV PROXY_LISTEN_PORT=8080
+EXPOSE $PROXY_LISTEN_PORT
+
+COPY nginx.conf.template /tmp/app.conf.template
+RUN make prepare-env allowed_ips=$INITIATOR_IPS nginx_template=/tmp/app.conf.template
 
 # см. https://github.com/krallin/tini
 ENTRYPOINT ["/sbin/tini", "--"]

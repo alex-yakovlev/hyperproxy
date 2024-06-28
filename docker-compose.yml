@@ -18,10 +18,14 @@ services:
           nocopy: true
 
   dev_app:
-    build: .
+    build:
+      context: .
+      args: &env
+        APP_ENV: dev
+        INITIATOR_IPS: 192.168.0.0/16
 
     environment:
-      ENV: dev
+      <<: *env
       DB_HOST: dev_db
       DB_NAME: dev-db
       DB_USER: dev

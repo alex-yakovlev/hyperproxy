@@ -1,0 +1,11 @@
+server {
+	listen ${PROXY_LISTEN_PORT};
+
+	# разрешенные адреса будут вставлены во время сборки из переменной `INITIATOR_IPS`
+	deny all;
+
+	location / {
+		proxy_set_header X-Forwarded-Host $host;
+		proxy_pass http://localhost:${APP_LISTEN_PORT};
+	}
+}

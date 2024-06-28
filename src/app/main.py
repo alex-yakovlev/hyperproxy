@@ -119,7 +119,7 @@ def make_app():
 
 def main():
     app = make_app()
-    aiohttp.web.run_app(app, port=config.get('APP_LISTEN_PORT'))
+    aiohttp.web.run_app(app, host='localhost', port=config.get('APP_LISTEN_PORT'))
 
 
 if __name__ == '__main__':

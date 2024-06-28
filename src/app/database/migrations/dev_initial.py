@@ -11,7 +11,7 @@ from .. import models
 
 
 async def apply(session):
-    if config.get('ENV') != 'dev':
+    if config.get('APP_ENV') != 'dev':
         return
 
     now = utils.get_current_datetime()
