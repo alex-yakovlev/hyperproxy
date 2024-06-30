@@ -4,10 +4,12 @@ import json
 import logging
 import logging.handlers
 import queue
+import os.path
 import traceback
 
 from app.database import models
 from app import constants
+from app.utils import config
 
 
 LOGGER_NAME = 'app'
@@ -148,8 +150,7 @@ class LoggingService():
         que = queue.SimpleQueue()
         que_handler = logging.handlers.QueueHandler(que)
         logger.addHandler(que_handler)
-        stream_handler = logging.StreamHandler()
-        stream_handler.setFormatter(logging.Formatter(
+        formatter = logging.Formatter(
             (
                 "[{asctime}] [{levelname:<8}] [{pathname}:{lineno}]: {message}"
                 "\nданные операции: opid={opid}, "
@@ -159,8 +160,16 @@ class LoggingService():
             ),
             '%Y-%m-%d %H:%M:%S %Z',
             style='{'
-        ))
-        self._stream_listener = logging.handlers.QueueListener(que, stream_handler)
+        )
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        file_handler = logging.handlers.TimedRotatingFileHandler(
+            os.path.join(config.get('LOGS_DIR'), 'app.log'),
+            when='midnight',
+            utc=True
+        )
+        file_handler.setFormatter(formatter)
+        self._stream_listener = logging.handlers.QueueListener(que, stream_handler, file_handler)
 
     def _init_db_logging(self, logger, db_sessionmaker, num_workers):
         que = asyncio.Queue()

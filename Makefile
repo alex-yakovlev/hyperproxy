@@ -22,7 +22,8 @@ start-app:
 	@ echo 'Starting nginx...'
 	@ nginx -g 'pid /tmp/nginx.pid;'
 	@ echo 'Starting app...'
-	@ mkdir '$(certs_dir)'; \
+	@ mkdir -p $$LOGS_DIR; \
+	mkdir '$(certs_dir)'; \
 	cert_path='$(addprefix $(certs_dir), payment-api-cert_default.pem)'; \
 	echo "$$PAYMENT_API_DEFAULT_CERT" > $$cert_path; \
 	PAYMENT_API_DEFAULT_CERT_PATH=$$cert_path poetry run python src/app/main.py

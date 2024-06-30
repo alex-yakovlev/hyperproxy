@@ -33,6 +33,7 @@ services:
       PAYMENT_API_MOCK_ORIGIN: 'http://payment_api_mock:8080'
       HASH_SALT: 'foo'
       OPERATION_LIFETIME: 600
+      LOGS_DIR=/var/log/app
 
     command: ash
     tty: true
