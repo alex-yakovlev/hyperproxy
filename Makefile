@@ -8,14 +8,14 @@ prepare-env:
 # 	вставка директив `allow`
 	@ allowed_ips=''; \
 	for ip in $$(echo '$(allowed_ips)' | tr ',' ' '); do \
-		allowed_ips="$$allowed_ips\n\tallow $$ip;"; \
+		allowed_ips="$$allowed_ips\n\t\tallow $$ip;"; \
 	done; \
-	sed -i -E "s|(deny all;)|$$allowed_ips\n\t\1|" $(nginx_template)
+	sed -i -E "s|(deny all;)|$$allowed_ips\n\t\t\1|" $(nginx_template)
 # 	интерполяция переменных
 # 	см. https://github.com/nginxinc/docker-nginx/blob/master/entrypoint/20-envsubst-on-templates.sh
 	@ defined_envs=$$(printf '$${%s} ' $$(awk "END { for (name in ENVIRON) { print name } }" < /dev/null )); \
 	envsubst "$$defined_envs" < $(nginx_template) > '$(addprefix $(nginx_conf_dir), app.conf)'
-	@ rm '$(addprefix $(nginx_conf_dir), default.conf)'
+	@ rm -f '$(addprefix $(nginx_conf_dir), default.conf)'
 	@ nginx -t
 
 start-app:

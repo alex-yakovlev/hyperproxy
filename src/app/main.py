@@ -1,7 +1,8 @@
 import asyncio
 import contextvars
-import json
 from functools import partial
+from http import HTTPStatus
+import json
 import os
 
 import aiohttp.web
@@ -101,6 +102,7 @@ def make_app():
             return await query_handler(self.request)
 
     app.router.add_view('/', RootHandler)
+    app.router.add_route('GET', '/health', lambda r: aiohttp.web.Response(status=HTTPStatus.OK))
 
     app.cleanup_ctx.append(prepare_database)
     app.cleanup_ctx.append(prepare_logging)

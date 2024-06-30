@@ -1,3 +1,7 @@
+upstream backend {
+	server localhost:${APP_LISTEN_PORT};
+}
+
 server {
 	listen ${PROXY_LISTEN_PORT};
 
@@ -6,11 +10,15 @@ server {
 	set_real_ip_from 10.0.0.0/8;
 	real_ip_header Do-Connecting-IP;
 
-	# разрешенные адреса будут вставлены во время сборки из переменной `INITIATOR_IPS`
-	deny all;
-
 	location / {
+		# разрешенные адреса будут вставлены во время сборки из переменной `INITIATOR_IPS`
+		deny all;
+
 		proxy_set_header X-Forwarded-Host $host;
-		proxy_pass http://localhost:${APP_LISTEN_PORT};
+		proxy_pass http://backend;
+	}
+
+	location /health {
+		proxy_pass http://backend;
 	}
 }
